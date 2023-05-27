@@ -59,7 +59,7 @@ export default function Home() {
             setLoading(false)
         }
         setDoSearch(false)
-    }, [doSearch])
+    }, [doSearch, activePage, authors, loading])
 
     useEffect(() => {
         setDoSearch(true);
@@ -148,7 +148,7 @@ export default function Home() {
                             />
                         <Card>
                             {authors.map((author : any) => (
-                                <Badge rightSection={(
+                                <Badge key={author.id} rightSection={(
                                     <ActionIcon onClick={() => {handleAuthorRemoval(author)}} size="xs" color="red" radius="xl" variant="transparent">
                                         <IconX size={"10rem"} />
                                     </ActionIcon>
