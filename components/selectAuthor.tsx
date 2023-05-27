@@ -1,15 +1,10 @@
-import { Input, TextInput, TextInputProps, useMantineTheme, Text, Accordion, Grid, Group, Badge, Button, Flex } from '@mantine/core';
+import { Input, TextInput, TextInputProps, useMantineTheme, Text, Accordion, Grid, Group, Badge, Button, Flex, Center } from '@mantine/core';
 import { IconSearch } from '@tabler/icons-react';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 
 const SelectAuthor = (props: any) => {
    const [accordionOpened, setAccordionOpened] : any = useState(-1);
-   const [selected, setSelected] : any = useState(false);
-
-   useEffect(() => {
-        setSelected(false);
-   }, [props])
 
    const handleAccordionClick = (index : number) => {
         setAccordionOpened((oldValue : any) => {
@@ -17,19 +12,36 @@ const SelectAuthor = (props: any) => {
         });
     }
 
+    const showAuthors = () => {
+        return props?.authorInfo?.results;
+    }
+
     return (
         <Accordion>
-            {!selected && props.authorInfo?.results && props.authorInfo?.results.map((result : any, index : number) => (
+            {showAuthors() && (
+                <Center>
+                    <Button
+                        onClick={() => {
+                            props.setAuthorInfo(null);
+                            setAccordionOpened(-1);
+                        }}
+                        color="red"
+                        size="xs"
+                    >
+                        Close Author Selector
+                    </Button>
+                </Center>
+            )}
+            {showAuthors() && props.authorInfo?.results.map((result : any, index : number) => (
                 <Accordion.Item key={result.id} value={result.id}>
                     <Accordion.Control onClick={() => {handleAccordionClick(index)}}>
                         <Link href={result.id} target='_blank'>
                             <Text fw={500} td="underline">{result.display_name}</Text>
                         </Link>
                         <Button onClick={() => {
-                            setSelected(true);
+                            setAccordionOpened(-1);
                             props.setAuthors((oldValue : any) => [...oldValue, {"id": result.id, "name": result.display_name}]);
                             props.setAuthorInfo(null);
-                            setAccordionOpened(-1);
                         }}>
                             Select
                         </Button>
