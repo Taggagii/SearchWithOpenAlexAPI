@@ -131,7 +131,6 @@ export default function Home() {
 
     return (
         <Container>
-
             <Card style={{paddingTop: (noResults) ? "30%" : "10px"}}>
                 <SearchBar rightSection={searchButton} id="SearchBar" onKeyUp={handleKeyDownSearch}></SearchBar>
                 <Card>
