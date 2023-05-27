@@ -19,8 +19,12 @@ export default function Home() {
     const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
     const [authors, setAuthors] : any = useState([]);
 
-    const formatDate = (date : Date) => {
-        return date.toISOString().substring(0, 10)
+    const formatDate = (date : Date | null) => {
+        if (date) {
+            return date.toISOString().substring(0, 10)
+        } else {
+            return "";
+        }
     }
 
     useEffect(() => {
@@ -84,7 +88,7 @@ export default function Home() {
             setLoading(false)
         }
         setDoSearch(false)
-    }, [doSearch, activePage, authors, loading])
+    }, [doSearch, activePage, authors, loading, dateRange, useDateRange])
 
     useEffect(() => {
         setDoSearch(true);
