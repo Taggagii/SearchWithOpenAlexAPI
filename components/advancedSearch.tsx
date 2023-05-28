@@ -63,7 +63,7 @@ const AdvancedSearch = (props : any) => {
     }
 
     const advancedFiltersSet = () => {
-        return props.authors.length || (props.dateRange[0] && props.dateRange[1] && props.useDateRange);
+        return props.authors.length || props.concepts.length || (props.dateRange[0] && props.dateRange[1] && props.useDateRange);
     }
 
     const toggleAdvancedFilters = () => {
@@ -72,6 +72,7 @@ const AdvancedSearch = (props : any) => {
         props.setAuthors([]);
         props.setDateRange([null, null]);
         props.setUseDateRange(false);
+        props.setConcepts([]);
         const useDateRangeCheckbox : any = document.querySelector('#useDateRangeCheckbox')
         const authorInput : any = document.querySelector('#AuthorInput')
         if (useDateRangeCheckbox && authorInput) {
