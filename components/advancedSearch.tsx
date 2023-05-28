@@ -118,15 +118,17 @@ const AdvancedSearch = (props : any) => {
                                             (<Text color="red">Date range is invalid</Text>)   
                                         }
                                     </Center>
-                                    <DatePicker
-                                        defaultLevel="decade"
-                                        numberOfColumns={2}
-                                        type="range"
-                                        value={props.dateRange}
-                                        onChange={props.setDateRange}
-                                        minDate={new Date(1500, 1, 1)}
-                                        maxDate={new Date(Date.now())}
-                                    />
+                                    <Center>
+                                        <DatePicker
+                                            defaultLevel="decade"
+                                            numberOfColumns={2}
+                                            type="range"
+                                            value={props.dateRange}
+                                            onChange={props.setDateRange}
+                                            minDate={new Date(1500, 1, 1)}
+                                            maxDate={new Date(Date.now())}
+                                            />
+                                    </Center>
                                 </>
                             )}
                         </Paper>

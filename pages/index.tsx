@@ -1,4 +1,4 @@
-import { ActionIcon, useMantineTheme, Container, Accordion, Badge, Card, Grid, Text, Center, Group, Pagination} from '@mantine/core';
+import { ActionIcon, useMantineTheme, Container, Accordion, Badge, Card, Grid, Text, Center, Group, Pagination, Paper} from '@mantine/core';
 import { IconArrowRight, IconArrowLeft } from '@tabler/icons-react';
 import { useState, useEffect, Dispatch, SetStateAction } from 'react';
 import { SearchBar } from '../components/searchBar';
@@ -18,6 +18,8 @@ export default function Home() {
     const [useDateRange, setUseDateRange] : any = useState(false);
     const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
     const [authors, setAuthors] : any = useState([]);
+    const [suggestedSearch, setSuggestedSearch] : any = useState([]);
+    const [lastInput, setLastInput] : any = useState(null);
 
     const formatDate = (date : Date | null) => {
         if (date) {
@@ -34,9 +36,9 @@ export default function Home() {
             const dateRangeIsGood = (useDateRange && dateRange[0] && dateRange[1])
             if (authors.length || searchValue !== "" || dateRangeIsGood) {
                 const authorIds = authors.map((author : any) => author.id.match(/.*\/(.*)/)[1])
-                // any authors
+                // contains any author
                 const authorSearchFilter = `authorships.author.id:${authorIds.join(':')}`;
-                // exact authors
+                // contains all authors
                 // const authorSearchFilter = authorIds.map((authorId : string) => `authorships.author.id:${authorId}`).join(',')
 
 
@@ -95,7 +97,6 @@ export default function Home() {
     }, [activePage])
 
 
-
     const searchButton : any = (
         <ActionIcon onClick={() => {setDoSearch(true)}} size={32} radius="xl" color={theme.primaryColor} variant="filled">
           {theme.dir === 'ltr' ? (
@@ -106,9 +107,32 @@ export default function Home() {
         </ActionIcon>
     )
 
+    useEffect(() => {
+        const delay = setTimeout(async () => {
+            const searchBar : any = document.querySelector('#SearchBar');
+            if (searchBar) {
+                const searchQuery = searchBar.value;
+                console.log("Quick search ", searchQuery);
+                const request = await fetch(`https://api.openalex.org/autocomplete/works?q=${searchQuery}`);
+                if (request.status === 200) {
+                    const autocompleteContent = await request.json();
+    
+                    setSuggestedSearch((oldValue: any) => {
+                        return autocompleteContent.results.map((value: any) => value.display_name);
+                    });
+                }
+            }
+
+
+        }, 100)
+        return () => clearTimeout(delay);
+    }, [lastInput])
+
     const handleKeyDownSearch = (event : any) => {
         if (event.code === "Enter") {
             setDoSearch(true)
+        } else {
+            setLastInput(Date.now())
         }
     }
 
@@ -119,8 +143,14 @@ export default function Home() {
     return (
         <Container>
             {/* Search interface */}
-            <Card style={{paddingTop: (!content) ? "30%" : "20px", paddingBottom: "0px"}}>
-                <SearchBar error={searchFailed} rightSection={searchButton} id="SearchBar" onKeyUp={handleKeyDownSearch}></SearchBar>
+            <Paper style={{paddingTop: (!content) ? "30%" : "20px", paddingBottom: "0px"}}>
+                <SearchBar
+                    error={searchFailed}
+                    rightSection={searchButton}
+                    id="SearchBar"
+                    onKeyUp={handleKeyDownSearch}
+                    data={suggestedSearch}
+                ></SearchBar>
                 {searchFailed && (<Text color="red">No search results</Text>)}
                 <AdvancedSearch
                     authors={authors}
@@ -130,7 +160,7 @@ export default function Home() {
                     dateRange={dateRange}
                     setDateRange={setDateRange}
                 />
-            </Card>
+            </Paper>
 
             {shouldShowContent() && (<>
                 <Card shadow='sm' withBorder>
