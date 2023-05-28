@@ -200,7 +200,7 @@ export default function Home() {
                         <Pagination
                             value={activePage}
                             onChange={setActivePage}
-                            total={content.meta.count / content.meta.per_page}
+                            total={content.meta.count / content.meta.per_page - 1}
                         ></Pagination>
                     </Card>
                 </Center>
