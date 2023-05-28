@@ -1,12 +1,16 @@
-import { Card, Center, Button, TextInput, Collapse, Badge, ActionIcon, Paper, Checkbox, Grid, Text } from "@mantine/core"
+import { Card, Center, Button, TextInput, Collapse, Badge, ActionIcon, Paper, Checkbox, Grid, Text, Autocomplete } from "@mantine/core"
 import { SelectAuthor } from "./selectAuthor"
-import { IconX } from '@tabler/icons-react'
+import { IconPlus, IconX } from '@tabler/icons-react'
 import { useEffect, useState } from "react";
 import { DatePicker } from '@mantine/dates';
 
 const AdvancedSearch = (props : any) => {
     const [advanced, setAdvanced] : [boolean, any] = useState(false);
     const [authorInfo, setAuthorInfo] : any = useState(null);
+    const [suggestedSearchAuthors, setSuggestedSearchAuthors] : any = useState([]);
+    const [suggestedSearchConcepts, setSuggestedSearchConcepts] : any = useState([]);
+    const [lastSearchInputAuthors, setLastSearchInputAuthors] : any = useState(null);
+    const [lastSearchInputConcepts, setLastSearchInputConcepts] : any = useState(null);
 
     const handleAuthorRemoval = (author : any) => {        
         props.setAuthors((oldAuthors : any) => {
@@ -16,7 +20,15 @@ const AdvancedSearch = (props : any) => {
         })
     }
 
-    const addAuthor = (event : any) => {
+    const handleConceptRemoval = (concept : any) => {        
+        props.setConcepts((oldConcepts : any) => {
+            const newConcepts = [...oldConcepts];
+            newConcepts.splice(newConcepts.findIndex((e : any) => e.id === concept.id), 1);
+            return newConcepts;
+        })
+    }
+
+    const addAuthor = () => {
         const authorInput : any = document.querySelector('#AuthorInput')
         const newAuthor = authorInput.value;
 
@@ -29,13 +41,13 @@ const AdvancedSearch = (props : any) => {
                 } else {
                     const content : {meta: any, results: any, group_by: any} = await response.json();
                     setAuthorInfo(content);
+                    authorInput.value = '';
                 }
             }
         }
 
         getAuthorInfo(newAuthor);
 
-        authorInput.value = '';
     }
 
     const handleCheckBox = (event : any) => {
@@ -68,21 +80,121 @@ const AdvancedSearch = (props : any) => {
         }
     }
 
+    useEffect(() => {
+        const delay = setTimeout(async () => {
+            const searchBar : any = document.querySelector('#AuthorInput');
+            if (searchBar) {
+                const searchQuery = searchBar.value;
+                const request = await fetch(`https://api.openalex.org/autocomplete/authors?q=${searchQuery}`);
+                if (request.status === 200) {
+                    const autocompleteContent = await request.json();
+    
+                    setSuggestedSearchAuthors((oldValue: any) => {
+                        return autocompleteContent.results.map((value: any) => value.display_name);
+                    });
+                } else {
+                    setSuggestedSearchAuthors([]);
+                }
+            }
+        }, 250)
+        return () => clearTimeout(delay);
+    }, [lastSearchInputAuthors])
+
+    useEffect(() => {
+        const delay = setTimeout(async () => {
+            const searchBar : any = document.querySelector('#ConceptInput');
+            if (searchBar) {
+                const searchQuery = searchBar.value;
+                const request = await fetch(`https://api.openalex.org/autocomplete/concepts?q=${searchQuery}`);
+                if (request.status === 200) {
+                    const autocompleteContent = await request.json();
+                    
+                    setSuggestedSearchConcepts((oldValue: any) => {
+                        return autocompleteContent.results.map((value: any) => value.display_name);
+                    });
+                } else {
+                    setSuggestedSearchConcepts([]);
+                }
+            }
+        }, 250)
+        return () => clearTimeout(delay);
+    }, [lastSearchInputConcepts])
+
+    const addConcept = () => {
+        const conceptInput : any = document.querySelector('#ConceptInput');
+        const concept = conceptInput.value;
+        const getConceptInfo = async (searchValue : string) => {
+            if (searchValue !== '') {
+                const searchString = `https://api.openalex.org/concepts?search=${searchValue}`;
+                const response : Response = await fetch(searchString);
+                if (response.status !== 200) {
+                    console.error(`Error on fetch ${searchString}`);
+                } else {
+                    const content : {meta: any, results: any, group_by: any} = await response.json();
+                    props.setConcepts((oldConcepts: any) => {
+                        const newConcepts = [...oldConcepts];
+                        if (newConcepts.findIndex((e) => e.id === content.results[0].id) === -1) {
+                            newConcepts.push({
+                                "id": content.results[0].id,
+                                "name": content.results[0].display_name,
+                            })
+                        }
+                        return newConcepts;
+                    })
+
+                }
+            }
+        }
+
+        getConceptInfo(concept);
+    }
+
+    const handleKeyDownSearchAuthors = (event : any) => {
+        if (event.code === "Enter") {
+            addAuthor();
+        } else {
+            setLastSearchInputAuthors(Date.now())
+        }
+    }
+
+    const handleKeyDownSearchConcepts= (event : any) => {
+        if (event.code === "Enter") {
+            addConcept();
+        } else {
+            setLastSearchInputConcepts(Date.now())
+        }
+    }
+
     return (
-        <Card withBorder={advanced} style={{margin: "10px"}}>
+        <Paper withBorder={advanced} style={{margin: "10px"}}>
                 <Center>
-                    <Button size="xs" color={advancedFiltersSet() ? "red" : "blue"} onClick={toggleAdvancedFilters}>{advancedFiltersSet() && "Clear "}Advanced Search</Button>
+                    <Button
+                        size="xs"
+                        color={advancedFiltersSet() ? "red" : "blue"}
+                        onClick={toggleAdvancedFilters}
+                        
+                        rightIcon={advanced ? 
+                            <IconX color="white" size={"1rem"} />
+                            :
+                            <IconPlus color="white" size={"1rem"} />
+                        }
+                    >
+                        {advancedFiltersSet() && "Clear "}Advanced Search
+                    </Button>
                 </Center>
             
                 <Collapse in={advanced} style={{padding: "30px"}}>
                     {/* Advanced Author Selector */}
-                    <TextInput
+                    <Autocomplete
                         placeholder="Author Name"
                         label="Authors"
                         id="AuthorInput"
+                        onKeyUp={handleKeyDownSearchAuthors}
+                        dropdownPosition="bottom"
                         rightSection={(
                             <Button onClick={addAuthor}>Add</Button>
                         )}
+                        data={suggestedSearchAuthors}
                     />
                     {/* Display selected authors */}
                     <Card>
@@ -101,6 +213,36 @@ const AdvancedSearch = (props : any) => {
                     <Paper>
                         <SelectAuthor setAuthorInfo={setAuthorInfo} authorInfo={authorInfo} setAuthors={props.setAuthors}></SelectAuthor>
                     </Paper>
+
+                    {/* Advanced concept selector */}
+                    <Autocomplete
+                        placeholder="Concept Name"
+                        label="Concepts"
+                        id="ConceptInput"
+                        onKeyUp={handleKeyDownSearchConcepts}
+                        dropdownPosition="bottom"
+                        // rightSection={(
+                        //     <Button onClick={addAuthor}>Add</Button>
+                        // )}
+                        data={suggestedSearchConcepts}
+                    />
+                    {/* Display selected concepts */}
+                    <Card>
+                        {props.concepts.map((concept : any) => (
+                            <Badge key={concept.id} rightSection={(
+                                <ActionIcon
+                                onClick={() => {handleConceptRemoval(concept)}}
+                                size="xs"
+                                color="red"
+                                >
+                                    <IconX size={"10rem"} />
+                                </ActionIcon>
+                            )}>{concept.name}</Badge>
+                        ))}
+                    </Card>
+
+
+                    <br />
 
                     {/* Advanced published date selector */}
                     <Paper>
@@ -136,7 +278,7 @@ const AdvancedSearch = (props : any) => {
 
                 </Collapse>
 
-        </Card>
+        </Paper>
     )
 }
 

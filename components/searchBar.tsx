@@ -10,6 +10,7 @@ const SearchBar = (props: AutocompleteProps) => {
       size="md"
       placeholder="Search"
       rightSectionWidth={42}
+      dropdownPosition="bottom"
       {...props}    />
   );
 }

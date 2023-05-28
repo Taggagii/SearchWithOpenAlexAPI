@@ -18,8 +18,10 @@ export default function Home() {
     const [useDateRange, setUseDateRange] : any = useState(false);
     const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
     const [authors, setAuthors] : any = useState([]);
+    const [concepts, setConcepts] : any = useState([]);
     const [suggestedSearch, setSuggestedSearch] : any = useState([]);
-    const [lastInput, setLastInput] : any = useState(null);
+    const [lastSearchInput, setLastSearchInput] : any = useState(null);
+
 
     const formatDate = (date : Date | null) => {
         if (date) {
@@ -29,37 +31,50 @@ export default function Home() {
         }
     }
 
+    const compileFiltersString = () => {
+        const filters = [];
+        
+        if (authors.length > 0) {
+            const authorIds = authors.map((author : any) => author.id.match(/.*\/(.*)/)[1])
+            const authorSearchFilter = `authorships.author.id:${authorIds.join(':')}`;
+            filters.push(authorSearchFilter);
+        }
+
+        if (useDateRange && dateRange[0] && dateRange[1]) {
+            const from_date : string = formatDate(dateRange[0]);
+            const to_date : string = formatDate(dateRange[1]);
+            const dateRangeSearchFilter = `from_publication_date:${from_date},to_publication_date:${to_date}`;
+            filters.push(dateRangeSearchFilter);
+        }
+
+        if (concepts.length > 0) {
+            const conceptIds = concepts.map((author : any) => author.id.match(/.*\/(.*)/)[1])
+            const conceptSearchFilter = `concepts.id:${conceptIds.join(':')}`;
+            filters.push(conceptSearchFilter);
+        }
+
+        if (filters.length > 0) {
+            return `&filter=${filters.join(',')}`;
+        }
+
+        return '';
+    }
+
     useEffect(() => {
         const getContent = async (searchValue : string) => {
             // const searchString = `https://api.openalex.org/works?search=${searchValue}&page=${activePage}&filter=authorships.author.id:A4330441364,authorships.author.id:A3056060526`;
             // const searchString = `https://api.openalex.org/authors?search=carl%20sagan`;
             const dateRangeIsGood = (useDateRange && dateRange[0] && dateRange[1])
-            if (authors.length || searchValue !== "" || dateRangeIsGood) {
-                const authorIds = authors.map((author : any) => author.id.match(/.*\/(.*)/)[1])
+            if (authors.length || concepts.length || searchValue !== "" || dateRangeIsGood) {
                 // contains any author
-                const authorSearchFilter = `authorships.author.id:${authorIds.join(':')}`;
+                // const authorSearchFilter = `authorships.author.id:${authorIds.join(':')}`;
                 // contains all authors
                 // const authorSearchFilter = authorIds.map((authorId : string) => `authorships.author.id:${authorId}`).join(',')
 
 
                 let searchString = `https://api.openalex.org/works?search=${searchValue}&page=${activePage}`;
 
-                const filters = []
-
-                if (authorIds.length > 0) {
-                    filters.push(authorSearchFilter);
-                }
-
-                if (dateRangeIsGood) {
-                    const from_date : string = formatDate(dateRange[0]);
-                    const to_date : string = formatDate(dateRange[1]);
-                    const dateRangeSearchFilter = `from_publication_date:${from_date},to_publication_date:${to_date}`;
-                    filters.push(dateRangeSearchFilter);
-                }
-
-                if (filters.length > 0) {
-                    searchString += `&filter=${filters.join(',')}`;
-                }
+                searchString += compileFiltersString();
 
                 console.log(`Requesting '${searchString}'`);
                 const response : Response = await fetch(searchString);
@@ -73,6 +88,7 @@ export default function Home() {
                     if (!content || Object.keys(content.results).length === 0) {
                         setSearchFailed(true);
                     } else {
+                        setSuggestedSearch([]);
                         setContent(content)
                         setSearchFailed(false);
                     }
@@ -112,27 +128,26 @@ export default function Home() {
             const searchBar : any = document.querySelector('#SearchBar');
             if (searchBar) {
                 const searchQuery = searchBar.value;
-                console.log("Quick search ", searchQuery);
-                const request = await fetch(`https://api.openalex.org/autocomplete/works?q=${searchQuery}`);
+                const request = await fetch(`https://api.openalex.org/autocomplete/works?q=${searchQuery}` + compileFiltersString());
                 if (request.status === 200) {
                     const autocompleteContent = await request.json();
     
                     setSuggestedSearch((oldValue: any) => {
                         return autocompleteContent.results.map((value: any) => value.display_name);
                     });
+                } else {
+                    setSuggestedSearch([]);
                 }
             }
-
-
-        }, 100)
+        }, 250)
         return () => clearTimeout(delay);
-    }, [lastInput])
+    }, [lastSearchInput])
 
     const handleKeyDownSearch = (event : any) => {
         if (event.code === "Enter") {
             setDoSearch(true)
         } else {
-            setLastInput(Date.now())
+            setLastSearchInput(Date.now())
         }
     }
 
@@ -155,6 +170,8 @@ export default function Home() {
                 <AdvancedSearch
                     authors={authors}
                     setAuthors={setAuthors}
+                    concepts={concepts}
+                    setConcepts={setConcepts}
                     useDateRange={useDateRange}
                     setUseDateRange={setUseDateRange}
                     dateRange={dateRange}

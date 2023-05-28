@@ -1,4 +1,4 @@
-import { Input, TextInput, TextInputProps, useMantineTheme, Text, Accordion, Grid, Group, Badge, Button, Flex, Center } from '@mantine/core';
+import { Input, TextInput, TextInputProps, useMantineTheme, Text, Accordion, Grid, Group, Badge, Button, Flex, Center, Space } from '@mantine/core';
 import { IconSearch } from '@tabler/icons-react';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
@@ -23,7 +23,6 @@ const SelectAuthor = (props: any) => {
                     <Button
                         onClick={() => {
                             props.setAuthorInfo(null);
-                            setAccordionOpened(-1);
                         }}
                         color="red"
                         size="xs"
@@ -35,16 +34,13 @@ const SelectAuthor = (props: any) => {
             {showAuthors() && props.authorInfo?.results.map((result : any, index : number) => (
                 <Accordion.Item key={result.id} value={result.id}>
                     <Accordion.Control onClick={() => {handleAccordionClick(index)}}>
-                        <Link href={result.id} target='_blank'>
-                            <Text fw={500} td="underline">{result.display_name}</Text>
-                        </Link>
-                        <Button onClick={() => {
-                            setAccordionOpened(-1);
-                            props.setAuthors((oldValue : any) => [...oldValue, {"id": result.id, "name": result.display_name}]);
-                            props.setAuthorInfo(null);
-                        }}>
-                            Select
-                        </Button>
+                        <Group>
+                            <Link href={result.id} target='_blank'>
+                                <Text fw={500} td="underline">{result.display_name}</Text>
+                            </Link>
+                            <Text size="sm" color="dimmed" weight={400}>{result?.last_known_institution?.display_name}</Text>
+                        </Group>
+
 
                         {/* Subtitle information */}
                         <Grid>
@@ -53,6 +49,16 @@ const SelectAuthor = (props: any) => {
                                     <div>
                                         <Text size="sm" color="dimmed" weight={400}>{result?.works_count} works</Text>
                                         <Text size="sm" color="dimmed" weight={400}>Cited by {result?.cited_by_count}</Text>
+                                        {(accordionOpened === index) && (
+                                            <>
+                                                <Button onClick={() => {
+                                                    props.setAuthors((oldValue : any) => [...oldValue, {"id": result.id, "name": result.display_name}]);
+                                                    props.setAuthorInfo(null);
+                                                }}>
+                                                    Select
+                                                </Button>
+                                            </>
+                                        )}
                                     </div>
                                 </Group>
                             </Grid.Col>
